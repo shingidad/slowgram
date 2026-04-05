@@ -3,8 +3,8 @@ import { notFound } from 'next/navigation'
 import { currentUser } from '@clerk/nextjs/server'
 import Image from 'next/image'
 import { getDb } from '@/lib/db'
-import { posts, postImages, comments, users, reactions, groupMembers } from '@/lib/db/schema'
-import { eq, asc, inArray } from 'drizzle-orm'
+import { posts, postImages, comments, users, reactions } from '@/lib/db/schema'
+import { eq, asc } from 'drizzle-orm'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { formatDistanceToNow } from 'date-fns'
 import { ko } from 'date-fns/locale'
@@ -29,24 +29,6 @@ export default async function PostDetailPage({ params }: Props) {
     .limit(1)
 
   if (!postRow) notFound()
-
-  // Verify user is in the group
-  const [membership] = await db
-    .select()
-    .from(groupMembers)
-    .where(eq(groupMembers.groupId, postRow.post.groupId))
-    .limit(1)
-
-  if (!membership || membership.userId !== user!.id) {
-    // Check if user is in this group
-    const userMembership = await db
-      .select()
-      .from(groupMembers)
-      .where(eq(groupMembers.userId, user!.id))
-
-    const groupIds = userMembership.map(m => m.groupId)
-    if (!groupIds.includes(postRow.post.groupId)) notFound()
-  }
 
   const [images, postReactions, postComments] = await Promise.all([
     db.select().from(postImages).where(eq(postImages.postId, id)),

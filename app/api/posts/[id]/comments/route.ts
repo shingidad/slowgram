@@ -1,7 +1,7 @@
 import { auth } from '@clerk/nextjs/server'
 import { getDb } from '@/lib/db'
-import { comments, posts, groupMembers, users } from '@/lib/db/schema'
-import { eq, and } from 'drizzle-orm'
+import { comments, posts } from '@/lib/db/schema'
+import { eq } from 'drizzle-orm'
 
 export async function POST(
   req: Request,
@@ -21,13 +21,6 @@ export async function POST(
 
     const [post] = await db.select().from(posts).where(eq(posts.id, postId)).limit(1)
     if (!post) return Response.json({ error: 'Post not found' }, { status: 404 })
-
-    const [membership] = await db
-      .select()
-      .from(groupMembers)
-      .where(and(eq(groupMembers.groupId, post.groupId), eq(groupMembers.userId, userId)))
-      .limit(1)
-    if (!membership) return Response.json({ error: 'Forbidden' }, { status: 403 })
 
     const [comment] = await db
       .insert(comments)
