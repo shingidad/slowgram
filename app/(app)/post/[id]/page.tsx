@@ -112,17 +112,21 @@ export default async function PostDetailPage({ params }: Props) {
         </p>
       </div>
 
-      {/* Comments */}
-      <CommentSection
-        postId={id}
-        initialComments={postComments.map(({ comment, author }) => ({
-          ...comment,
-          author,
-        }))}
-        currentUserId={user!.id}
-        currentUserName={user!.firstName || user!.username || '나'}
-        currentUserImage={user!.imageUrl}
-      />
+      {/* Comments — Suspense for useSearchParams inside CommentSection */}
+      <Suspense
+        fallback={<div className="border-t border-border h-[100px] animate-pulse bg-muted/20" aria-hidden />}
+      >
+        <CommentSection
+          postId={id}
+          initialComments={postComments.map(({ comment, author }) => ({
+            ...comment,
+            author,
+          }))}
+          currentUserId={user!.id}
+          currentUserName={user!.firstName || user!.username || '나'}
+          currentUserImage={user!.imageUrl}
+        />
+      </Suspense>
     </div>
   )
 }

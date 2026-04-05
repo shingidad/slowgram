@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useOptimistic } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -29,6 +30,10 @@ export default function CommentSection({
   currentUserName,
   currentUserImage,
 }: CommentSectionProps) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const returnToFeed = searchParams.get('from') === 'feed'
+
   const [text, setText] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
@@ -60,11 +65,22 @@ export default function CommentSection({
     setSubmitting(true)
 
     try {
-      await fetch(`/api/posts/${postId}/comments`, {
+      const res = await fetch(`/api/posts/${postId}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: optimistic.content }),
       })
+      if (!res.ok) {
+        setText(optimistic.content)
+        router.refresh()
+        return
+      }
+      if (returnToFeed) {
+        router.push('/feed')
+        router.refresh()
+        return
+      }
+      router.refresh()
     } finally {
       setSubmitting(false)
     }
