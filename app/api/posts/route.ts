@@ -1,7 +1,7 @@
 import { auth } from '@clerk/nextjs/server'
 import { getDb } from '@/lib/db'
 import { posts, postImages, groupMembers, users } from '@/lib/db/schema'
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { after } from 'next/server'
 
 export async function POST(req: Request) {
@@ -21,10 +21,13 @@ export async function POST(req: Request) {
     const [membership] = await db
       .select()
       .from(groupMembers)
-      .where(eq(groupMembers.userId, userId))
+      .where(and(
+        eq(groupMembers.userId, userId),
+        eq(groupMembers.groupId, groupId)
+      ))
       .limit(1)
 
-    if (!membership || membership.groupId !== groupId) {
+    if (!membership) {
       return Response.json({ error: 'Not a member of this group' }, { status: 403 })
     }
 
