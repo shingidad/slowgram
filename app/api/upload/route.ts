@@ -1,5 +1,7 @@
 import { auth } from '@clerk/nextjs/server'
-import { put } from '@vercel/blob'
+import { getSupabaseAdmin } from '@/lib/supabase'
+
+const BUCKET = 'slowgram-media'
 
 export async function POST(req: Request) {
   const { userId } = await auth()
@@ -18,10 +20,18 @@ export async function POST(req: Request) {
   }
 
   const ext = file.name.split('.').pop() ?? 'jpg'
-  const blob = await put(`slowgram/${userId}/${Date.now()}.${ext}`, file, {
-    access: 'public',
-    contentType: file.type,
-  })
+  const path = `${userId}/${Date.now()}.${ext}`
+  const buffer = await file.arrayBuffer()
 
-  return Response.json({ url: blob.url })
+  const supabase = getSupabaseAdmin()
+  const { error } = await supabase.storage
+    .from(BUCKET)
+    .upload(path, buffer, { contentType: file.type, upsert: false })
+
+  if (error) {
+    return Response.json({ error: error.message }, { status: 500 })
+  }
+
+  const { data } = supabase.storage.from(BUCKET).getPublicUrl(path)
+  return Response.json({ url: data.publicUrl })
 }
