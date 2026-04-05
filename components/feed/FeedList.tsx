@@ -1,6 +1,6 @@
 import { getDb } from '@/lib/db'
-import { posts, postImages, reactions, comments, users, groupMembers } from '@/lib/db/schema'
-import { desc, eq, inArray, sql } from 'drizzle-orm'
+import { posts, postImages, reactions, comments, users } from '@/lib/db/schema'
+import { desc, eq, inArray } from 'drizzle-orm'
 import PostCard from './PostCard'
 
 interface FeedListProps {
@@ -12,27 +12,7 @@ interface FeedListProps {
 export default async function FeedList({ userId, cursor, limit = 20 }: FeedListProps) {
   const db = getDb()
 
-  // Get groups the user belongs to
-  const memberships = await db
-    .select({ groupId: groupMembers.groupId })
-    .from(groupMembers)
-    .where(eq(groupMembers.userId, userId))
-
-  if (memberships.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-24 px-6 text-center">
-        <div className="text-5xl mb-4">🏡</div>
-        <h2 className="text-lg font-medium text-foreground mb-2">아직 가족 그룹이 없어요</h2>
-        <p className="text-sm text-muted-foreground mb-6 leading-6">
-          가족 그룹을 만들거나 초대 링크로<br />가족과 함께 시작해보세요
-        </p>
-      </div>
-    )
-  }
-
-  const groupIds = memberships.map(m => m.groupId)
-
-  // Fetch posts with author info, image count, reaction counts, comment count
+  // 홈 피드: 그룹 가입 여부와 관계없이 모든 게시물 표시
   const feedPosts = await db
     .select({
       post: posts,
@@ -40,7 +20,6 @@ export default async function FeedList({ userId, cursor, limit = 20 }: FeedListP
     })
     .from(posts)
     .innerJoin(users, eq(posts.authorId, users.id))
-    .where(inArray(posts.groupId, groupIds))
     .orderBy(desc(posts.createdAt))
     .limit(limit)
 
